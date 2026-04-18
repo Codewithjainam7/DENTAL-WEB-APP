@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Mulish:ital,wght@0,200..1000;1,200..1000&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-heading: "Fraunces", serif;
+  --font-body: "Mulish", sans-serif;
+
+  --color-cream: #FDF8F0;
+  --color-warm-primary: #E07B39;
+  --color-deep-teal: #2A7F62;
+  --color-light-teal: #D4EDE5;
+  --color-warm-yellow: #F5C842;
+  --color-light-orange: #FDE8D8;
+  --color-dark-text: #2C1810;
+  --color-muted-text: #7A6654;
+}
+
+@layer base {
+  body {
+    @apply bg-cream text-dark-text font-body;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-dark-text;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-warm-primary text-white px-8 py-3 rounded-full font-semibold transition-all hover:bg-warm-primary/90 hover:scale-105 active:scale-95 shadow-lg shadow-warm-primary/20;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-deep-teal text-deep-teal px-8 py-3 rounded-full font-semibold transition-all hover:bg-deep-teal hover:text-white hover:scale-105 active:scale-95;
+  }
+
+  .section-padding {
+    @apply py-20 px-4 md:px-8 max-w-7xl mx-auto;
+  }
+
+  .organic-card {
+    @apply bg-white rounded-[32px] p-8 shadow-xl shadow-warm-primary/5 transition-all hover:-translate-y-2;
+  }
+
+  .blob-shape {
+    clip-path: url(#blob-clip);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-cream;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-warm-primary/30 rounded-full hover:bg-warm-primary/50;
+}
+
+/* AOS Customizations */
+[data-aos] {
+  pointer-events: none;
+}
+
+.aos-animate {
+  pointer-events: auto;
+}
+
