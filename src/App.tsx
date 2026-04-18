@@ -28,6 +28,8 @@ import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
 import ContactPage from './pages/ContactPage';
 import AppointmentPage from './pages/AppointmentPage';
+import LoginPage from './pages/LoginPage';
+import AdminDashboard from './pages/AdminDashboard';
 import FAQPage from './pages/FAQPage';
 import PricingPage from './pages/PricingPage';
 import KidsCornerPage from './pages/KidsCornerPage';
@@ -35,6 +37,7 @@ import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin') || location.pathname === '/login';
 
   useEffect(() => {
     AOS.init({
@@ -52,7 +55,7 @@ function App() {
     <HelmetProvider>
       <div className="min-h-screen flex flex-col bg-cream selection:bg-warm-primary selection:text-white">
         <ScrollToTop />
-        <Navbar />
+        {!isAdminPage && <Navbar />}
         
         <main className="flex-grow">
           <Routes>
@@ -66,6 +69,8 @@ function App() {
             <Route path="/blog/:slug" element={<BlogPostPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/appointment" element={<AppointmentPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/faqs" element={<FAQPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/kids-corner" element={<KidsCornerPage />} />
@@ -73,8 +78,8 @@ function App() {
           </Routes>
         </main>
 
-        <Footer />
-        <WhatsAppButton />
+        {!isAdminPage && <Footer />}
+        {!isAdminPage && <WhatsAppButton />}
         
         <ToastContainer 
           position="bottom-right"

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Calendar, Clock, User, Phone, Mail, MessageSquare, CheckCircle, ArrowRight, ShieldCheck, Heart, Info } from 'lucide-react';
+import { Calendar, Clock, User, Phone, Mail, MessageSquare, CheckCircle, ArrowRight, ShieldCheck, Heart, Info, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import SEOHead from '../components/shared/SEOHead';
 import Breadcrumb from '../components/shared/Breadcrumb';
@@ -19,7 +19,7 @@ const appointmentSchema = z.object({
 
 const timeSlots = {
   Morning: ['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM'],
-  Afternoon: ['01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 AM'],
+  Afternoon: ['01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM'],
   Evening: ['05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM'],
 };
 
@@ -27,6 +27,7 @@ export default function AppointmentPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('');
+  const [availability, setAvailability] = useState({});
   const [step, setStep] = useState(1); // 1: Info & Service, 2: Date & Time
 
   const { register, handleSubmit, formState: { errors, isValid } } = useForm({
@@ -35,6 +36,19 @@ export default function AppointmentPage() {
   });
 
   const [personalData, setPersonalData] = useState(null);
+
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      try {
+        const res = await fetch('/api/availability');
+        const data = await res.json();
+        setAvailability(data);
+      } catch (err) {
+        console.error('Failed to load availability');
+      }
+    };
+    fetchAvailability();
+  }, [selectedDate]);
 
   // Generate next 7 days
   const dates = Array.from({ length: 7 }, (_, i) => {
@@ -59,12 +73,36 @@ export default function AppointmentPage() {
       return;
     }
 
-    // Simulate API call
-    toast.info('Sending your request...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const key = `${selectedDate}_${selectedTimeSlot}`;
+    if (availability[key] >= 20) {
+      toast.error('This slot just got filled. Please choose another one.');
+      return;
+    }
+
+    toast.info('Processing your booking...');
     
-    setIsSubmitted(true);
-    toast.success('Appointment booked successfully!');
+    try {
+      const res = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...personalData,
+          date: selectedDate,
+          timeSlot: selectedTimeSlot
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setIsSubmitted(true);
+        toast.success('Appointment booked successfully!');
+      } else {
+        toast.error(data.message || 'Booking failed');
+      }
+    } catch (err) {
+      toast.error('Server connection error');
+    }
   };
 
   if (isSubmitted) {
@@ -99,6 +137,14 @@ export default function AppointmentPage() {
       </div>
     );
   }
+
+  const getSlotStatus = (slot) => {
+    const key = `${selectedDate}_${slot}`;
+    const count = availability[key] || 0;
+    if (count >= 20) return 'FULL';
+    if (count >= 15) return 'FILLING FAST';
+    return null;
+  };
 
   return (
     <motion.div
@@ -207,7 +253,10 @@ export default function AppointmentPage() {
                       {dates.map((d) => (
                         <button
                           key={d.full}
-                          onClick={() => setSelectedDate(d.full)}
+                          onClick={() => {
+                            setSelectedDate(d.full);
+                            setSelectedTimeSlot('');
+                          }}
                           className={`flex flex-col items-center justify-center w-20 h-28 rounded-3xl transition-all border-2 ${
                             selectedDate === d.full 
                               ? 'bg-warm-primary border-warm-primary text-white shadow-lg scale-105' 
@@ -229,20 +278,35 @@ export default function AppointmentPage() {
                         <h4 className="flex items-center text-sm font-bold text-dark-text uppercase tracking-widest mb-4 opacity-50">
                           <Clock size={16} className="mr-2" /> {period} Slots
                         </h4>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                          {slots.map((slot) => (
-                            <button
-                              key={slot}
-                              onClick={() => setSelectedTimeSlot(slot)}
-                              className={`py-4 px-2 rounded-2xl font-bold text-sm transition-all border-2 ${
-                                selectedTimeSlot === slot
-                                  ? 'bg-deep-teal border-deep-teal text-white shadow-md'
-                                  : 'bg-white border-cream text-muted-text hover:border-warm-primary/50'
-                              }`}
-                            >
-                              {slot}
-                            </button>
-                          ))}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {slots.map((slot) => {
+                            const status = getSlotStatus(slot);
+                            const isFull = status === 'FULL';
+                            
+                            return (
+                              <button
+                                key={slot}
+                                disabled={isFull}
+                                onClick={() => setSelectedTimeSlot(slot)}
+                                className={`group relative py-4 px-4 rounded-2xl font-bold text-sm transition-all border-2 flex flex-col items-center overflow-hidden ${
+                                  selectedTimeSlot === slot
+                                    ? 'bg-deep-teal border-deep-teal text-white shadow-md'
+                                    : isFull 
+                                      ? 'bg-cream/50 border-transparent text-muted-text/30 cursor-not-allowed opacity-60' 
+                                      : 'bg-white border-cream text-muted-text hover:border-warm-primary/50'
+                                }`}
+                              >
+                                <span>{slot}</span>
+                                {status && (
+                                    <span className={`text-[9px] uppercase tracking-tighter mt-1 ${
+                                        isFull ? 'text-red-500' : 'text-warm-primary'
+                                    }`}>
+                                        {status}
+                                    </span>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
@@ -288,6 +352,10 @@ export default function AppointmentPage() {
               <p className="text-xs text-muted-text leading-relaxed">
                 Online bookings represent a preference. Our coordinator will call you to finalize the exact time based on doctor availability.
               </p>
+              <div className="mt-4 p-4 bg-warm-yellow/10 rounded-2xl flex items-start space-x-3">
+                 <AlertTriangle size={18} className="text-warm-yellow shrink-0 mt-0.5" />
+                 <p className="text-[10px] text-muted-text">Max 20 consultations per hour are permitted to ensure quality care.</p>
+              </div>
             </div>
           </div>
         </div>

@@ -91,6 +91,8 @@ export default function Footer() {
           &copy; {currentYear} Dr. Smile Dental Clinic. All rights reserved.
         </p>
         <div className="flex items-center space-x-6 text-sm text-white/50">
+          <Link to="/login" className="hover:text-white">Staff Login</Link>
+          <Link to="/pricing" className="hover:text-white">Pricing</Link>
           <Link to="/privacy" className="hover:text-white">Privacy Policy</Link>
           <Link to="/terms" className="hover:text-white">Terms of Service</Link>
           <span className="flex items-center">
